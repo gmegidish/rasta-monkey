@@ -186,7 +186,7 @@ export class Animation extends Component {
     const keys = [d.clip, ...d.clips].filter(Boolean);
     for (const k of keys) {
       const clip = clips[k];
-      if (clip && !this.states[clip.name]) {
+      if (clip && !this.states[clip.name] && !isImportStub(clip)) {
         this.states[clip.name] = new AnimationState(this, clip.name, clip);
       }
     }
@@ -392,4 +392,11 @@ export class AudioSource extends Component {
     }
   }
   get isPlaying() { return !!this.voice && this.voice.playing; }
+}
+
+// Maya-import "Default" clips holding one key a frame before 0: the original evidently never applies them
+// (the start menu's character panel only lines up with its buttons when they are skipped)
+function isImportStub(clip) {
+  const curves = [...clip.pos, ...clip.rot, ...clip.scale, ...(clip.float || [])];
+  return curves.length > 0 && curves.every((c) => c.keys.length === 1 && c.keys[0][0] < 0);
 }

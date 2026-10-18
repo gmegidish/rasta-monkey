@@ -128,6 +128,136 @@ export class ControlLogic extends MonoBehaviour {
   Die() {}
 }
 
+// enemies: sleep until a Sleeper wakes them, then patrol; every 7th frame they re-plan, then drive their body
+export class ControlLogicEnemy extends ControlLogic {
+  constructor(go) {
+    super(go);
+    this.currentLoop = 0;
+    this.activeLoop = 6;
+  }
+
+  SetupEnemy(body) {
+    this.SetupBody(body);
+    body.isEnemy = true;
+    this.levelAttr.Register('enemy', this);
+  }
+
+  Setup(body) { this.SetupEnemy(body); }
+  Die() { this.levelAttr.Collected('enemy', 1); }
+
+  // the shared setup / wakeup / sleep states; patrol() is the per-type behaviour
+  Update() {
+    if (this.currentLoop === 0) {
+      if (this.mode === 'setup') {
+        this.mode = 'sleep';
+      } else if (this.mode === 'wakeup') {
+        [this.inputH, this.inputV] = this.wakeInput;
+        this.mode = 'patrolling';
+      } else if (this.mode === 'sleep') {
+        this.inputH = 0;
+        this.inputV = -1;
+        this.mode = 'resting';
+        this.enabled = false;
+      } else if (this.mode === 'patrolling') {
+        this.patrol();
+      }
+    }
+    if (this.currentLoop++ === this.activeLoop) {
+      this.currentLoop = 0;
+    }
+    if (this.bodyBehaviour.enabled) {
+      this.bodyBehaviour.DoUpdate();
+    }
+  }
+
+  userPosition() {
+    const t = this.levelAttr.actorTransform;
+    if (t) {
+      this.lastUserPosition = t.position;
+    }
+    return this.lastUserPosition || [0, 0, 0];
+  }
+
+  // the user is around and not mid-turn
+  userIsSteady() {
+    const u = this.levelAttr.userBodyBehaviour;
+    return u && u.bodyState !== BodyState.Turning;
+  }
+}
+
+// chases the user along branches
+export class ControlLogicTypeB extends ControlLogicEnemy {
+  get wakeInput() { return [1, 1]; }
+
+  patrol() {
+    const user = this.userPosition(), body = this.bodyBehaviour;
+    if (body.reachedTheEnd) {
+      this.inputH *= -1;
+      this.inputV = Random.Range(-1, 2);
+    } else if (body.platform) {
+      this.inputV = this.userIsSteady() && user[1] > body.platform.rightPoint[1] ? 1 : -1;
+      this.inputH = user[0] > body.myTransform.position[0] ? -1 : 1;
+    }
+  }
+}
+
+// chases the user up and down poles
+export class ControlLogicTypeV extends ControlLogicEnemy {
+  get wakeInput() { return [1, 1]; }
+
+  patrol() {
+    const user = this.userPosition(), body = this.bodyBehaviour;
+    if (body.reachedTheEnd) {
+      this.inputV *= -1;
+      this.inputH = Random.Range(-1, 2);
+    } else if (body.platform) {
+      this.inputH = this.userIsSteady() && user[0] < body.platform.rightPoint[0] ? 1 : -1;
+      this.inputV = user[1] < body.myTransform.position[1] ? -1 : 1;
+    }
+  }
+}
+
+// bounces back and forth
+export class ControlLogicTypeVA extends ControlLogicEnemy {
+  get wakeInput() { return [1, 1]; }
+
+  patrol() {
+    if (this.bodyBehaviour.reachedTheEnd) {
+      this.inputV *= -1;
+      this.inputH *= -1;
+    }
+  }
+}
+
+// walks along, turning round at the end or when it has not moved for a second
+export class ControlLogicTypeDown extends ControlLogicEnemy {
+  get wakeInput() { return [1, -1]; }
+
+  patrol() {
+    if (!this.looping) {
+      this.StartCoroutine(this.CheckIfStuck());
+    }
+    if (this.bodyBehaviour.reachedTheEnd) {
+      this.inputV = -1;
+      this.inputH *= -1;
+    }
+  }
+
+  * CheckIfStuck() {
+    this.looping = true;
+    while (this.enabled) {
+      const p = this.bodyBehaviour.myTransform.position;
+      if (this.lastPosition && v3.dist(p, this.lastPosition) < 1) {
+        this.inputH *= -1;
+        this.inputV = -1;
+      }
+      this.lastPosition = p;
+      yield new WaitForSeconds(1);
+    }
+    this.looping = false;
+  }
+}
+
 export class ControlLogicUser extends ControlLogic {
   Setup(body) {
     this.SetupBody(body);

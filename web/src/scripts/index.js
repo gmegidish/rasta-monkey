@@ -5,3 +5,4 @@ export * from './level.js';
 export * from './camera.js';
 export * from './gui.js';
 export * from './menus.js';
+export * from './mechanics.js';

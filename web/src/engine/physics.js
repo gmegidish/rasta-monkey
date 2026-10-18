@@ -579,6 +579,10 @@ export class Physics {
     return this.ignored.has(pairKey(a, b));
   }
 
+  // Physics.gravity (x, y; z is dropped)
+  get gravity() { const g = this.w.getGravity(); return [g.x, g.y, 0]; }
+  set gravity(g) { this.w.setGravity(Vec2(g[0], g[1])); }
+
   IgnoreCollision(a, b, ignore = true) {
     if (!a || !b) {
       return;
