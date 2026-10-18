@@ -1,0 +1,9 @@
+.venv/
+build/
+.DS_Store
+__pycache__/
+# original game binary, store metadata and decompiled sources stay local
+Payload/
+iTunesMetadata.plist
+recovered/
+a.jpg

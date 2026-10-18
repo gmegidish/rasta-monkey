@@ -1,0 +1,59 @@
+:root {
+  --bg: #000;
+  --bar: #f5d300;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+#stage {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+/* the original 480x320 landscape composition, scaled to fit */
+#view {
+  width: min(100vw, 150vh);
+  height: min(66.667vw, 100vh);
+  display: block;
+  image-rendering: auto;
+  cursor: pointer;
+}
+
+#boot {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  transition: opacity 300ms ease-out;
+}
+
+#boot.done { opacity: 0; pointer-events: none; }
+
+#boot .bar {
+  width: min(60vw, 320px);
+  height: 6px;
+  background: #222;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+#boot .fill {
+  height: 100%;
+  width: 0;
+  background: var(--bar);
+  transition: width 120ms linear;
+}
