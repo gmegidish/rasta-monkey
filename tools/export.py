@@ -333,7 +333,10 @@ def main():
             elif o.type.name == 'PhysicMaterial':
                 r = u25.R(o.get_raw_data())
                 pm_name = r.str(); dyn, stat, bounce = r.fs(3)
-                E.physic[key((fname, o.path_id))] = dict(name=pm_name, friction=round(dyn, 4), staticFriction=round(stat, 4), bounce=round(bounce, 4))
+                # combine modes are serialized in PhysX order: 0 average, 1 min, 2 multiply, 3 max
+                fc, bc = r.i32(), r.i32()
+                E.physic[key((fname, o.path_id))] = dict(name=pm_name, friction=round(dyn, 4), staticFriction=round(stat, 4), bounce=round(bounce, 4),
+                                                         frictionCombine=fc, bounceCombine=bc)
             elif o.type.name == 'AudioClip':
                 E.audio[key((fname, o.path_id))] = export_audio(o.get_raw_data())
     export_gui(E, prefabs)

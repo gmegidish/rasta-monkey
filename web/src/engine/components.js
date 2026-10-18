@@ -288,28 +288,28 @@ export class Animation extends Component {
     const root = this.transform;
     for (const c of clip.pos) {
       const tr = c.path ? root.Find(c.path) : root;
-      if (tr) {
+      if (tr && c.keys.length) {   // Unity ignores curves without keys
         tr.localPosition = evalCurve(c.keys, t, 3);
         tr.dirty();
       }
     }
     for (const c of clip.rot) {
       const tr = c.path ? root.Find(c.path) : root;
-      if (tr) {
+      if (tr && c.keys.length) {
         tr.localRotation = quat.normalize(evalCurve(c.keys, t, 4));
         tr.dirty();
       }
     }
     for (const c of clip.scale) {
       const tr = c.path ? root.Find(c.path) : root;
-      if (tr) {
+      if (tr && c.keys.length) {
         tr.localScale = evalCurve(c.keys, t, 3);
         tr.dirty();
       }
     }
     for (const c of clip.float) {
       const tr = c.path ? root.Find(c.path) : root;
-      if (tr) {
+      if (tr && c.keys.length) {
         applyFloat(tr.gameObject, c, evalCurve(c.keys, t, 1)[0]);
       }
     }

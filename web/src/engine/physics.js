@@ -16,6 +16,13 @@ export const PHYS = {
   positionIterations: 8,
 };
 
+// PhysX material mixing: the pair uses the higher of the two combine modes (0 average, 1 min, 2 multiply, 3 max)
+const DEFAULT_MATERIAL = { friction: 0.4, bounce: 0, frictionCombine: 0, bounceCombine: 0 };
+
+function combine(a, b, mode) {
+  return [(a + b) / 2, Math.min(a, b), a * b, Math.max(a, b)][mode] ?? (a + b) / 2;
+}
+
 // ------------------------------------------------------------------ custom angular velocity drive (ConfigurableJoint)
 // Drives a body's angular velocity toward a target with a torque limit, without constraining its position.
 class AngularDrive extends planck.Joint {
@@ -551,7 +558,9 @@ function chainSegments(segs) {
 export class Physics {
   constructor(world) {
     this.world = world;
-    this.w = new planck.World({ gravity: Vec2(0, PHYS.gravity) });
+    // Unity 2.5's PhysX had no CCD; planck's TOI sub-steps also ignore joints, so a fast
+    // bounce would reflect the body while its jointed hands keep falling
+    this.w = new planck.World({ gravity: Vec2(0, PHYS.gravity), continuousPhysics: false });
     this.ground = this.w.createBody();
     this.rigidbodies = new Set();
     this.statics = new Map();  // collider -> planck body (colliders without a rigidbody)
@@ -567,11 +576,10 @@ export class Physics {
         c.setEnabled(false);
         return;
       }
-      const ma = a.material && this.world.assets.physicMaterials[a.material];
-      const mb = b.material && this.world.assets.physicMaterials[b.material];
-      if (ma || mb) {
-        c.setRestitution(Math.max(ma ? ma.bounce : 0, mb ? mb.bounce : 0));
-      }
+      const ma = this.world.assets.physicMaterials[a.material] || DEFAULT_MATERIAL;
+      const mb = this.world.assets.physicMaterials[b.material] || DEFAULT_MATERIAL;
+      c.setFriction(combine(ma.friction, mb.friction, Math.max(ma.frictionCombine, mb.frictionCombine)));
+      c.setRestitution(combine(ma.bounce, mb.bounce, Math.max(ma.bounceCombine, mb.bounceCombine)));
     });
   }
 
